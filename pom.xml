@@ -6,7 +6,7 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>ch.qos.logback</groupId>
-  <artifactId>logback-parent</artifactId>
+  <artifactId>logback-parent-zeasn</artifactId>
   <version>1.2.3</version>
   <packaging>pom</packaging>
 
@@ -42,13 +42,11 @@
     <module>logback-core</module>
     <module>logback-classic</module>
     <module>logback-access</module>
-    <module>logback-site</module>
-    <module>logback-examples</module>
   </modules>
 
   <properties>
-    <maven.compiler.source>1.6</maven.compiler.source>
-    <maven.compiler.target>1.6</maven.compiler.target>
+    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>1.8</maven.compiler.target>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <junit.version>4.10</junit.version>
     <javax.mail.version>1.4</javax.mail.version>
@@ -105,12 +103,12 @@
       <!-- start of dependencies duplicated from logback-bom/pom.xml -->
       <dependency>
         <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-core</artifactId>
+        <artifactId>logback-core-zeasn</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-classic</artifactId>
+        <artifactId>logback-classic-zeasn</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
@@ -120,12 +118,12 @@
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-access</artifactId>
+        <artifactId>logback-access-zeasn</artifactId>
         <version>${project.version}</version>
       </dependency>
       <dependency>
         <groupId>ch.qos.logback</groupId>
-        <artifactId>logback-core</artifactId>
+        <artifactId>logback-core-zeasn</artifactId>
         <version>${project.version}</version>
         <type>test-jar</type>
       </dependency>
@@ -422,19 +420,6 @@
     </plugins>
   </build>
 
-  <distributionManagement>
-
-    <site>
-      <id>qos_ch</id>
-      <url>scp://te.qos.ch/var/www/logback.qos.ch/htdocs/</url>
-    </site>
-
-    <repository>
-      <id>sonatype-nexus-staging</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-
-  </distributionManagement>
 
   <profiles>
     <profile>
@@ -550,5 +535,19 @@
 
 
   </profiles>
+  
+  <distributionManagement>
+		<snapshotRepository>
+			<id>user-snapshot</id>
+			<name>User Porject Snapshot</name>
+			<url>http://nexus.zeasn.com/nexus/content/repositories/snapshots/</url>
+			<uniqueVersion>true</uniqueVersion>
+		</snapshotRepository>
+		<repository>
+			<id>user-release</id>
+			<name>User Porject Release</name>
+			<url>http://nexus.zeasn.com/nexus/content/repositories/releases/</url>
+		</repository>
+	</distributionManagement>
 
 </project>

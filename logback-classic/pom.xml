@@ -7,11 +7,11 @@
 
   <parent>
     <groupId>ch.qos.logback</groupId>
-    <artifactId>logback-parent</artifactId>
+    <artifactId>logback-parent-zeasn</artifactId>
     <version>1.2.3</version>
   </parent>
 
-  <artifactId>logback-classic</artifactId>
+  <artifactId>logback-classic-zeasn</artifactId>
   <packaging>jar</packaging>
   <name>Logback Classic Module</name>
   <description>logback-classic module</description>
@@ -19,7 +19,7 @@
   <dependencies>
     <dependency>
       <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
+      <artifactId>logback-core-zeasn</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -115,7 +115,7 @@
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
+      <artifactId>logback-core-zeasn</artifactId>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -274,6 +274,7 @@
         <configuration>
           <!-- once, never, pertest, always -->
           <!--<forkMode>once</forkMode>-->
+          <skipTests>true</skipTests>
           <forkCount>1C</forkCount>
           <reuseForks>false</reuseForks>
           <reportFormat>plain</reportFormat>
@@ -400,5 +401,19 @@
       </dependencies>
     </profile>
   </profiles>
+  
+  <distributionManagement>
+		<snapshotRepository>
+			<id>user-snapshot</id>
+			<name>User Porject Snapshot</name>
+			<url>http://nexus.zeasn.com/nexus/content/repositories/snapshots/</url>
+			<uniqueVersion>true</uniqueVersion>
+		</snapshotRepository>
+		<repository>
+			<id>user-release</id>
+			<name>User Porject Release</name>
+			<url>http://nexus.zeasn.com/nexus/content/repositories/releases/</url>
+		</repository>
+	</distributionManagement>
 
 </project>

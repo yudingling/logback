@@ -132,6 +132,11 @@ public class NodeToStringTransformer {
         if (value != null) {
             return value;
         }
+        
+        value = ConsulHelper.getValue(key, propertyContainer0, propertyContainer1);
+        if (value != null) {
+            return value;
+        }
 
         return null;
     }

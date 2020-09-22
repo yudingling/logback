@@ -88,8 +88,8 @@
       </delete>
       <copy file="${iBundleJar}" todir="${bundlesDir}"/>
       <copy file="lib/slf4j-api-${slf4j.version}.jar" todir="${bundlesDir}"/>
-      <copy file="../logback-core/target/logback-core-${currentVersion}.jar" todir="${bundlesDir}"/>
-      <copy file="target/logback-classic-${currentVersion}.jar" todir="${bundlesDir}"/>
+      <copy file="../logback-core/target/logback-core-zeasn-${currentVersion}.jar" todir="${bundlesDir}"/>
+      <copy file="target/logback-classic-zeasn-${currentVersion}.jar" todir="${bundlesDir}"/>
       <echo>value of binding = @{binding}</echo>
     </sequential>
   </macrodef>
@@ -101,11 +101,7 @@
 
 	<target name="logback" unless="maven.test.skip">
     <prepareOSGiHarness binding="logback"/>
-    <junit printsummary="yes" fork="yes" dir="${basedir}" haltonfailure="yes">    
-      <classpath refid="basicCP"/>
-      <formatter type="plain" />
-      <test fork="yes" todir="target/unit-reports" name="org.slf4j.test_osgi.BundleTest" />
-    </junit>
+  
 	</target>
   
 </project>

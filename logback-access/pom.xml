@@ -7,11 +7,11 @@
 
   <parent>
     <groupId>ch.qos.logback</groupId>
-    <artifactId>logback-parent</artifactId>
+    <artifactId>logback-parent-zeasn</artifactId>
     <version>1.2.3</version>
   </parent>
 
-  <artifactId>logback-access</artifactId>
+  <artifactId>logback-access-zeasn</artifactId>
   <packaging>jar</packaging>
   <name>Logback Access Module</name>
   <description>logback-access module</description>
@@ -19,12 +19,12 @@
   <dependencies>
     <dependency>
       <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
+      <artifactId>logback-core-zeasn</artifactId>
       <scope>compile</scope>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>
-      <artifactId>logback-core</artifactId>
+      <artifactId>logback-core-zeasn</artifactId>
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
@@ -71,6 +71,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
+        	<skipTests>true</skipTests>
           <forkMode>once</forkMode>
           <!--<parallel>classes</parallel>-->
           <reportFormat>plain</reportFormat>
@@ -173,5 +174,19 @@
       </dependencies>
     </profile>
   </profiles>
+  
+  <distributionManagement>
+		<snapshotRepository>
+			<id>user-snapshot</id>
+			<name>User Porject Snapshot</name>
+			<url>http://nexus.zeasn.com/nexus/content/repositories/snapshots/</url>
+			<uniqueVersion>true</uniqueVersion>
+		</snapshotRepository>
+		<repository>
+			<id>user-release</id>
+			<name>User Porject Release</name>
+			<url>http://nexus.zeasn.com/nexus/content/repositories/releases/</url>
+		</repository>
+	</distributionManagement>
 
 </project>
