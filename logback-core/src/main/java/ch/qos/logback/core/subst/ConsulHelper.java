@@ -1,24 +1,43 @@
 package ch.qos.logback.core.subst;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.yaml.snakeyaml.Yaml;
 
 import com.alibaba.fastjson.JSON;
-
 import ch.qos.logback.core.spi.PropertyContainer;
-import ch.qos.logback.core.util.OptionHelper;
 
 public class ConsulHelper {
-	private static final String KEY_HOLDER = "{key}";
+	private static final String CONSUL_CUSTOM_KEY = "consulCustom";
+	private static final String CONSUL_ENV_KEY = "consulEnv";
+	private static final String CONSUL_KEY = "consul";
+	
+	private static final String CONSUL_CUSTOM_DEFAULT = "http://consul.zeasnapp.uk:8500/v1/kv/saas/${profileActive}/${appName}";
+	private static final String CONSUL_ENV_DEFAULT = "http://consul.zeasnapp.uk:8500/v1/kv/saas/${profileActive}/common";
+	private static final String CONSUL_DEFAULT = "http://consul.zeasnapp.uk:8500/v1/kv/saas/common";
+	
+	private static final String MAVEN_PROPERTY_FILE_NAME = "mavenProperties.properties";
+	private static java.util.Properties mavenProperties;
+	
 	private static ConcurrentHashMap<String, CacheObj> remoteCache = new ConcurrentHashMap<>();
+	
+	private ConsulHelper() {}
+	
+	public static String getValue(String key) {
+		return getValue(key, null, null);
+	}
 	
 	public static String getValue(String key, PropertyContainer propertyContainer0, PropertyContainer propertyContainer1) {
 		String[] keySplits = key.split("\\.");
@@ -29,32 +48,31 @@ public class ConsulHelper {
 		}
 		
 		String urlKey = keySplits[0];
-		String paramKey = keySplits[1];
 		List<String> jsonKeys = new ArrayList<>();
 		
-		for(int i=2; i<len; i++) {
+		for(int i=1; i<len; i++) {
 			jsonKeys.add(keySplits[i]);
 		}
 		
-		String url = lookupKey(urlKey, propertyContainer0, propertyContainer1);
+		String url = lookupUrl(urlKey, propertyContainer0, propertyContainer1);
 		if(url == null) {
 			return null;
 		}
 		
-		return getRemoveValue(url, paramKey, jsonKeys);
+		return getRemoveValue(url, jsonKeys);
 	}
 	
-	private static String getRemoveValue(String url, String paramKey, List<String> jsonKeys) {
-		String cacheKey = url + "_" + paramKey;
-		
-		CacheObj obj = remoteCache.computeIfAbsent(cacheKey, key -> {
-			String queryUrl = combineQueryUrl(url, paramKey);
+	private static String getRemoveValue(String url, List<String> jsonKeys) {
+		CacheObj obj = remoteCache.computeIfAbsent(url, key -> {
 			String queryValue = null;
 			
 			try {
-				queryValue = getValueFromConsulUrl(queryUrl);
+				queryValue = getValueFromConsulUrl(url);
 				
-			} catch (Exception e) {
+			} catch(NotHttp200Exception ex) {
+				//configuration not exist in consul.
+				
+			}catch (Exception e) {
 				e.printStackTrace();
 			}
 			
@@ -65,37 +83,63 @@ public class ConsulHelper {
 		return obj.getJsonValue(jsonKeys);
 	}
 	
-	private static String combineQueryUrl(String url, String paramKey) {
-		if(url.indexOf(KEY_HOLDER) >= 0) {
-			return url.replace(KEY_HOLDER, paramKey);
-			
-		}else {
-			return url.endsWith("/") ? (url + paramKey) : (url + "/" + paramKey);
+	private static String lookupUrl(String key, PropertyContainer propertyContainer0, PropertyContainer propertyContainer1) {
+		String value = null;
+		
+		if(propertyContainer0 != null) {
+			value = propertyContainer0.getProperty(key);
+	        if (value != null) {
+	        	return value;
+	        }
 		}
-	}
-	
-	private static String lookupKey(String key, PropertyContainer propertyContainer0, PropertyContainer propertyContainer1) {
-        String value = propertyContainer0.getProperty(key);
-        if (value != null)
-            return value;
-
+        
         if (propertyContainer1 != null) {
             value = propertyContainer1.getProperty(key);
-            if (value != null)
-                return value;
+            if (value != null) {
+            	return value;
+            }   
         }
-
-        value = OptionHelper.getSystemProperty(key, null);
-        if (value != null)
-            return value;
-
-        value = OptionHelper.getEnv(key);
+        
+        value = lookupKeyInMaven(key);
         if (value != null) {
             return value;
         }
 
         return null;
     }
+	
+	private static String lookupKeyInMaven(String key) {
+		if(CONSUL_CUSTOM_KEY.equals(key) || CONSUL_ENV_KEY.equals(key) || CONSUL_KEY.equals(key)) {
+			String value = getMavenProperty(key);
+			
+			if(value == null) {
+				if(CONSUL_CUSTOM_KEY.equals(key)) {
+					value = CONSUL_CUSTOM_DEFAULT;
+					
+				}else if(CONSUL_ENV_KEY.equals(key)) {
+					value = CONSUL_ENV_DEFAULT;
+					
+				}else{
+					value = CONSUL_DEFAULT;
+				}
+			}
+			
+			String profileActive = getMavenProperty("profileActive");
+			String appName = getMavenProperty("appName");
+			
+			if(profileActive != null) {
+				value = value.replace("${profileActive}", profileActive).replace("@profileActive@", profileActive);
+			}
+			if(appName != null) {
+				value = value.replace("${appName}", appName).replace("@appName@", appName);
+			}
+			
+			return value;
+			
+		}else {
+			return null;
+		}
+	}
 	
 	private static String getValueFromConsulUrl(String url) throws IOException, NotHttp200Exception{
 		String txt = HttpClientUtil.httpGet(url);
@@ -110,34 +154,72 @@ public class ConsulHelper {
 		return null;
 	}
 	
+	private static String getMavenProperty(String key) {
+		if(mavenProperties == null) {
+			loadMavenProperties();
+		}
+		
+		return mavenProperties.getProperty(key);
+	}
+	
+	private static void loadMavenProperties() {
+		mavenProperties = new Properties();
+		
+		InputStream input = null;
+		try {
+			input = ConsulHelper.class.getResourceAsStream("/" + MAVEN_PROPERTY_FILE_NAME);
+			
+			//MAVEN_PROPERTY_FILE_NAME not found. the 'properties-maven-plugin' plugin is not configured in pom.xml
+			if(input == null) {
+				return;
+			}
+			
+			mavenProperties.load(input);
+			
+		} catch (Exception e) {
+			//ignore exception
+			
+		} finally {
+			try{
+				if(input != null){
+					input.close(); 
+				}
+	 		}catch(Exception ex){
+	 			//ignore exception
+	 		}
+		}
+	}
+	
 	static class CacheObj{
-		private String queryValue;
+		private Map<String, Object> yaml;
 
 		public CacheObj(String queryValue) {
 			super();
-			this.queryValue = queryValue;
+			
+			this.yaml = StringUtils.isNotEmpty(queryValue) ? new Yaml().load(queryValue) : new HashMap<>();
 		}
 		
 		@SuppressWarnings("rawtypes")
 		public String getJsonValue(List<String> jsonKeys) {
-			if(CollectionUtils.isEmpty(jsonKeys)) {
-				return this.queryValue;
-			}
-			
-			if(StringUtils.isEmpty(this.queryValue)) {
+			if(CollectionUtils.isEmpty(jsonKeys) || MapUtils.isEmpty(this.yaml)) {
 				return null;
 			}
 			
-			Object tmp = JSON.parseObject(this.queryValue, Map.class);
+			Object tmp = null;
+			Map<?, ?> tmpMap = this.yaml;
+			
 			for(String key : jsonKeys) {
-				if(tmp instanceof Map) {
-					Map tmpMap = (Map) tmp;
+				tmp = tmpMap.get(key);
+				
+				if(!(tmp instanceof Map)) {
+					break;
 					
-					tmp = tmpMap.get(key);
+				}else {
+					tmpMap = (Map) tmp;
 				}
 			}
 			
-			return tmp instanceof Map ? JSON.toJSONString(tmp) : tmp.toString();
+			return tmp == null || tmp instanceof Map ? null : tmp.toString();
 		}
 	}
 	
