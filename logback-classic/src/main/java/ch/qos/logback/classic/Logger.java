@@ -20,6 +20,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Marker;
 import org.slf4j.spi.LocationAwareLogger;
@@ -145,7 +146,7 @@ public final class Logger implements org.slf4j.Logger, LocationAwareLogger, Appe
     }
 
     public synchronized void setLevel(Level newLevel) {
-        if (level == newLevel) {
+    	if (level == newLevel) {
             // nothing to do;
             return;
         }
@@ -319,12 +320,18 @@ public final class Logger implements org.slf4j.Logger, LocationAwareLogger, Appe
     }
 
     private void localLevelReset() {
-        effectiveLevelInt = Level.DEBUG_INT;
-        if (isRootLogger()) {
-            level = Level.DEBUG;
-        } else {
-            level = null;
-        }
+    	String initLevel = this.loggerContext.getInitLoggerLevel(name);
+    	if(StringUtils.isNotEmpty(initLevel)) {
+    		this.level = Level.toLevel(initLevel);
+    		
+    	}else {
+    		effectiveLevelInt = Level.DEBUG_INT;
+            if (isRootLogger()) {
+                level = Level.DEBUG;
+            } else {
+                level = null;
+            }
+    	}
     }
 
     void recursiveReset() {

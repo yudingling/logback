@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.ILoggerFactory;
 import org.slf4j.Marker;
 
@@ -40,6 +41,7 @@ import ch.qos.logback.core.spi.LifeCycle;
 import ch.qos.logback.core.status.StatusListener;
 import ch.qos.logback.core.status.StatusManager;
 import ch.qos.logback.core.status.WarnStatus;
+import ch.qos.logback.core.subst.ConsulHelper;
 
 /**
  * LoggerContext glues many of the logback-classic components together. In
@@ -70,6 +72,8 @@ public class LoggerContext extends ContextBase implements ILoggerFactory, LifeCy
 
     int resetCount = 0;
     private List<String> frameworkPackages;
+    
+    private static Map<String, String> initLogLevelMap = null;
 
     public LoggerContext() {
         super();
@@ -133,7 +137,7 @@ public class LoggerContext extends ContextBase implements ILoggerFactory, LifeCy
         Logger childLogger = (Logger) loggerCache.get(name);
         // if we have the child, then let us return it without wasting time
         if (childLogger != null) {
-            return childLogger;
+            return this.initLoggerLevel(childLogger);
         }
 
         // if the desired logger does not exist, them create all the loggers
@@ -158,9 +162,51 @@ public class LoggerContext extends ContextBase implements ILoggerFactory, LifeCy
             }
             logger = childLogger;
             if (h == -1) {
-                return childLogger;
+                return this.initLoggerLevel(childLogger);
             }
         }
+    }
+    
+    private Logger initLoggerLevel(Logger logger) {
+    	String initLevel = this.getInitLoggerLevel(logger.getName());
+    	if(StringUtils.isNotEmpty(initLevel)) {
+    		logger.setLevel(Level.toLevel(initLevel));
+    	}
+    	
+    	return logger;
+    }
+    
+    private synchronized void loadInitLogLevel() {
+    	//double check
+    	if(initLogLevelMap != null) {
+    		return;
+    	}
+    	
+    	initLogLevelMap = new ConcurrentHashMap<>();
+    	
+    	String logCfg = ConsulHelper.getValue("consul.initLogLevel");
+    	if(StringUtils.isNotEmpty(logCfg)) {
+    		String[] tmpArr = logCfg.split(";");
+    		if(tmpArr.length > 0) {
+    			for(String cfg : tmpArr) {
+    				String tmp = cfg.trim();
+    				if(tmp.length() > 0) {
+    					String[] clsAndLevel = tmp.split("=");
+    					if(clsAndLevel.length == 2) {
+    						initLogLevelMap.put(clsAndLevel[0], clsAndLevel[1]);
+    					}
+    				}
+    			}
+    		}
+    	}
+    }
+    
+    public String getInitLoggerLevel(String loggerName) {
+    	if(initLogLevelMap == null) {
+    		this.loadInitLogLevel();
+    	}
+    	
+    	return initLogLevelMap.get(loggerName);
     }
 
     private void incSize() {
