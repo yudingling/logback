@@ -21,24 +21,25 @@
     <pathelement location="./src/test/input/integration/autoInit/" />
 	</path >
 
-
+	
 	<target name="testAll" depends="testWithoutGroovy, testConditionalsWithoutJanino" 
           unless="maven.test.skip">
 	</target>
 
 
+	
 	<target name="testWithoutGroovy" unless="maven.test.skip">
-		<junit printsummary="yes" fork="no" haltonfailure="yes">
+		<junit printsummary="yes" fork="no" haltonfailure="no">
 			<classpath refid="basicClasspath" />
 			<formatter type="plain" />
 			<test fork="yes" todir="target/unit-reports" 
             outfile="TEST-NoGroovy" 
             name="ch.qos.logback.classic.util.InitializationIntegrationTest" />
 		</junit>
-	</target>
+	</target> 
 
 	<target name="testConditionalsWithoutJanino" unless="maven.test.skip">
-		<junit printsummary="yes" fork="no" haltonfailure="yes">
+		<junit printsummary="yes" fork="no" haltonfailure="no">
 			<classpath refid="basicClasspath" />
 			<formatter type="plain" />
 			<test fork="yes" todir="target/unit-reports" 
